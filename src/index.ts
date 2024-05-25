@@ -4,16 +4,13 @@
 //!optimize 2
 
 import Observers from "@rbxts/observers";
-import { GroupService, Players, Workspace } from "@rbxts/services";
+import { GroupService, Players, RunService } from "@rbxts/services";
 import safeThreadCancel from "./safe-thread-cancel";
 
 function getGroupsAsync(userId: number) {
 	return GroupService.GetGroupsAsync(userId);
 }
-
-function getTime() {
-	return Workspace.GetServerTimeNow();
-}
+const getTime = RunService.IsRunning() ? time : os.clock;
 
 /**
  * # Grouper
@@ -46,8 +43,10 @@ namespace Grouper {
 
 		for (const group of groups) {
 			if (group.Id !== groupId) continue;
-			roleCache.set(group.Rank + 1, group.Role);
-			return group.Rank;
+
+			const rank = group.Rank;
+			roleCache.set(rank + 1, group.Role);
+			return rank;
 		}
 	}
 
@@ -64,9 +63,9 @@ namespace Grouper {
 			let killThread: thread | undefined;
 
 			const startTime = getTime();
-			const rank = fetchRank(userId, groupId) ?? 0;
+			let rank = fetchRank(userId, groupId) ?? 0;
 
-			if (player && player.IsDescendantOf(Players)) {
+			if (player?.IsDescendantOf(Players)) {
 				const threadsWaiting = playerRanks.get(userId) as Array<thread>;
 				playerRanks.set(userId, rank);
 				if (typeIs(threadsWaiting, "table")) for (const thread of threadsWaiting) task.spawn(thread, rank);
@@ -83,6 +82,7 @@ namespace Grouper {
 							playerRanks.set(userId, newRank);
 							for (const [callback] of onRankChangedCallbacks)
 								task.spawn(callback, player, newRank, rank);
+							rank = newRank;
 						}
 
 						task.wait(rankRefreshRate);
@@ -107,6 +107,7 @@ namespace Grouper {
 			const index = onRankChangedCallbacks.indexOf(data);
 			if (index === -1) return;
 
+			// biome-ignore lint/performance/noDelete: SHUT UP!!!!!!!!
 			if (index === 0) delete onRankChangedCallbacks[0];
 			else onRankChangedCallbacks.unorderedRemove(index);
 		};
@@ -121,7 +122,7 @@ namespace Grouper {
 			return coroutine.yield()[0] as number;
 		}
 
-		if (player && player.IsDescendantOf(Players)) {
+		if (player?.IsDescendantOf(Players)) {
 			playerRanks.set(player.UserId, [coroutine.running()]);
 			return coroutine.yield()[0] as number;
 		}
