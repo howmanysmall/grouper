@@ -48,6 +48,8 @@ namespace Grouper {
 			roleCache.set(rank + 1, group.Role);
 			return rank;
 		}
+
+		return 0;
 	}
 
 	export function initialize(newConfiguration: { groupId: number; rankRefreshRate?: number }) {

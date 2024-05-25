@@ -1,6 +1,6 @@
 {
 	"name": "@rbxts/grouper",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "A module for getting accurate group ranks for players on the server, and detecting rank changes.",
 	"main": "out/init.lua",
 	"scripts": {
